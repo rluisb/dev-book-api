@@ -1,0 +1,21 @@
+version: '3.3'
+services:
+  db:
+    container_name: devbook_db
+    image: mysql/mysql-server:8.0.23
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'devbook'
+      MYSQL_USER: 'golang'
+      MYSQL_PASSWORD: 'devbookpasswd'
+      MYSQL_ROOT_PASSWORD: 'rootdevbookpasswd'
+    ports:
+      - '3306:3306'
+    expose:
+      - '3306'
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+volumes:
+  db-data:

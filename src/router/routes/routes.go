@@ -15,12 +15,12 @@ type Route struct {
 }
 
 //Configure router by adding all routes inside mux.Router
-func Configure(r *mux.Router) *mux.Router {
+func Configure(router *mux.Router) *mux.Router {
 	routes := usersRoutes
 
 	for _, route := range routes {
-		r.HandleFunc(route.URI, route.Function).Methods(route.Method)
+		router.HandleFunc(route.URI, route.Function).Methods(route.Method)
 	}
 
-	return r
+	return router
 }
