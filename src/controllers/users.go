@@ -1,7 +1,13 @@
-package controller
+package controllers
 
 import (
+	"api/src/database"
+	"api/src/models"
+	"api/src/repositories"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -9,7 +15,29 @@ import (
 
 //Create a new user on DB
 func CreateUser(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Creating an User"))
+	requestBody, error := ioutil.ReadAll(r.Body)
+	if error != nil {
+		log.Fatal(error)
+	}
+
+	var user models.User
+	if error = json.Unmarshal(requestBody, &user); error != nil {
+		log.Fatal(error)
+	}
+
+	db, error := database.Connect()
+	if error != nil {
+		log.Fatal(error)
+	}
+
+	repository := repositories.NewUsersRepository(db)
+
+	userID, error := repository.Create(user)
+	if error != nil {
+		log.Fatal(error)
+	}
+
+	w.Write([]byte(fmt.Sprintf("InsertedId: %d", userID)))
 }
 
 //Find all users on DB

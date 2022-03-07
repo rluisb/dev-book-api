@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"api/src/controller"
+	"api/src/controllers"
 	"net/http"
 )
 
@@ -9,31 +9,31 @@ var usersRoutes = []Route{
 	{
 		URI: "/users",
 		Method: http.MethodPost,
-		Function: controller.CreateUser,
+		Function: controllers.CreateUser,
 		AuthorizationRequired: false,
 	},
 	{
 		URI: "/users",
 		Method: http.MethodGet,
-		Function: controller.FindAllUsers,
+		Function: controllers.FindAllUsers,
 		AuthorizationRequired: false,
 	},
 	{
 		URI: "/users/{id}",
 		Method: http.MethodGet,
-		Function: controller.FindUserById,
+		Function: controllers.FindUserById,
 		AuthorizationRequired: false,
 	},
 	{
 		URI: "/users/{id}",
 		Method: http.MethodPut,
-		Function: controller.UpdateUser,
+		Function: controllers.UpdateUser,
 		AuthorizationRequired: false,
 	},
 	{
 		URI: "/users/{id}",
 		Method: http.MethodDelete,
-		Function: controller.DeleteUser,
+		Function: controllers.DeleteUser,
 		AuthorizationRequired: false,
 	},
 }
