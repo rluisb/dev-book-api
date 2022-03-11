@@ -1,9 +1,12 @@
 package models
 
 import (
+	"api/src/security"
 	"errors"
 	"strings"
 	"time"
+
+	"github.com/badoux/checkmail"
 )
 
 //Represents the user that will use the Social Network
@@ -22,7 +25,10 @@ func (user *User) Prepare(step string) error {
 		return error
 	}
 
-	user.format()
+	if error := user.format(step); error != nil {
+		return error
+	}
+
 	return nil
 }
 
@@ -39,6 +45,10 @@ func (user *User) validate(step string) error {
 		 return errors.New("User email is required and cannot be empty")
 	}
 
+	if validationError := checkmail.ValidateFormat(user.Email); validationError != nil {
+		return errors.New("User email is not in a valid format")
+	}
+
 	if step == "create" && user.Password == "" {
 		 return errors.New("User name is required and cannot be empty")
 	}
@@ -46,9 +56,20 @@ func (user *User) validate(step string) error {
 	return nil
 }
 
-func (user *User) format() {
+func (user *User) format(step string) error {
 	user.Name = strings.TrimSpace(user.Name)
 	user.Nick = strings.TrimSpace(user.Nick)
 	user.Email = strings.TrimSpace(user.Email)
+
+	if (step == "create") {
+		hashedPassword, error := security.Hash(user.Password)
+		if error != nil {
+			return error
+		}
+
+		user.Password = string(hashedPassword)
+	}
+
+	return nil
 }
 
