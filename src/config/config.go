@@ -12,8 +12,12 @@ import (
 var (
 	//It's the connection string to database
 	DatabaseConnectionString = ""
+
 	//Port where the API will be exposed
 	Port = 0
+
+	//SecretKey is the key that will be used to sign JWT token
+	SecretKey []byte
 )
 
 //This function will initialize environment variables
@@ -34,4 +38,6 @@ func Load() {
 		os.Getenv("DB_PASSWORD"),
 		os.Getenv("DB_NAME"),
 	)
+
+	SecretKey = []byte(os.Getenv("JWT_SECRET_KEY"))
 }

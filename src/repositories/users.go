@@ -104,6 +104,7 @@ func (repository users) FindByID(ID uint64) (models.User, error) {
 	 return user, nil
 }
 
+//Update an user by it's ID
 func (repository users) Update(ID uint64, user models.User) error {
 	statement, error := repository.db.Prepare(
 		"UPDATE users SET name = ?, nick = ?, email = ? where id = ?",
@@ -121,6 +122,7 @@ func (repository users) Update(ID uint64, user models.User) error {
 	 return nil
 }
 
+//Delete an user by it's ID
 func (repository users) Delete(ID uint64) error {
 	statement, error := repository.db.Prepare(
 		"DELETE FROM users WHERE id = ?",
