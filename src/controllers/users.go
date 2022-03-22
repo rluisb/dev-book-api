@@ -119,7 +119,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if userIDFromToken != userID {
-		responses.Error(w, http.StatusForbidden, errors.New("is not possible update an user that is not yours"))
+		responses.Error(w, http.StatusForbidden, errors.New("it's not possible update an user that is not yours"))
 		return
 	}
 
@@ -167,6 +167,17 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userIDFromToken, error := authentication.GetUserIDFromToken(r)
+	if error != nil {
+		responses.Error(w, http.StatusUnauthorized, error)
+		return
+	}
+
+	if userIDFromToken != userID {
+		responses.Error(w, http.StatusForbidden, errors.New("it's not possible delete an user that is not yours"))
+		return
+	}
+
 	db, error := database.Connect()
 	if error != nil {
 		responses.Error(w, http.StatusInternalServerError, error)
@@ -182,6 +193,106 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responses.JSON(w, http.StatusNoContent, nil)
+}
+
+//Ensure that a user can follow another
+func FollowUser(w http.ResponseWriter, r *http.Request) {
+	followerId, error := authentication.GetUserIDFromToken(r)
+	if error != nil {
+		responses.Error(w, http.StatusUnauthorized, error)
+		return
+	}
+
+	vars := mux.Vars(r)
+	userId, error := strconv.ParseUint(vars["id"], 10, 64)
+	if error != nil {
+		responses.Error(w, http.StatusBadRequest, error)
+		return
+	}
+
+	if followerId == userId {
+		responses.Error(w, http.StatusForbidden, errors.New("it's not possible to follow yourself"))
+		return
+	}
+
+	db, error := database.Connect()
+	if error != nil {
+		responses.Error(w, http.StatusInternalServerError, error)
+		return
+	}
+	defer db.Close()
+
+	repository := repositories.NewUsersRepository(db)
+	if error = repository.Follow(userId, followerId); error != nil {
+		responses.Error(w, http.StatusInternalServerError, error)
+		return
+	}
+
+	responses.JSON(w, http.StatusNoContent, nil)
+}
+
+//Ensure that a user can unfollow another
+func UnfollowUser(w http.ResponseWriter, r *http.Request) {
+	followerId, error := authentication.GetUserIDFromToken(r)
+	if error != nil {
+		responses.Error(w, http.StatusUnauthorized, error)
+		return
+	}
+
+	vars := mux.Vars(r)
+	userId, error := strconv.ParseUint(vars["id"], 10, 64)
+	if error != nil {
+		responses.Error(w, http.StatusBadRequest, error)
+		return
+	}
+
+	if followerId == userId {
+		responses.Error(w, http.StatusForbidden, errors.New("it's not possible to ollow yourself"))
+		return
+	}
+
+	db, error := database.Connect()
+	if error != nil {
+		responses.Error(w, http.StatusInternalServerError, error)
+		return
+	}
+	defer db.Close()
+
+	repository := repositories.NewUsersRepository(db)
+	if error = repository.Unfollow(userId, followerId); error != nil {
+		responses.Error(w, http.StatusInternalServerError, error)
+		return
+	}
+
+	responses.JSON(w, http.StatusNoContent, nil)
+}
+
+//Find all followers from a user
+func FindFollowers(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	userID, error := strconv.ParseUint(vars["id"], 10, 64)
+	if error != nil {
+		responses.Error(w, http.StatusBadRequest, error)
+		return
+	}
+
+	db, error := database.Connect()
+	if error != nil {
+		responses.Error(w, http.StatusInternalServerError, error)
+		return
+	}
+	defer db.Close()
+
+	repository := repositories.NewUsersRepository(db)
+
+	users, error := repository.FindFollowersByUserId(userID)
+	if error != nil {
+		responses.Error(w, http.StatusInternalServerError, error)
+		return
+	}
+
+	responses.JSON(w, http.StatusOK, users)
 }
 
 func getQueryParamByName(r *http.Request, queryParamName string) string{

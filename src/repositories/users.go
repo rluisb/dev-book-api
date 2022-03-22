@@ -158,3 +158,74 @@ func (repository users) FindUserByEmail(email string) (models.User, error) {
 
 	return user, nil
 }
+
+//Create following between users
+func (repository users) Follow(userID, followerID uint64) error {
+	statement, error := repository.db.Prepare(
+		"INSERT IGNORE INTO followers (user_id, follower_id) VALUES (?, ?)",
+	)
+
+	if error != nil {
+		return error
+	}
+	defer statement.Close()
+
+	if _, error = statement.Exec(userID, followerID); error != nil {
+		return error
+	}
+
+	return nil
+}
+
+//Remove following between users
+func (repository users) Unfollow(userID, followerID uint64) error {
+	statement, error := repository.db.Prepare(
+		"DELETE FROM followers WHERE user_id = ? AND follower_id = ?",
+	)
+
+	if error != nil {
+		return error
+	}
+	defer statement.Close()
+
+	if _, error = statement.Exec(userID, followerID); error != nil {
+		return error
+	}
+
+	return nil
+}
+
+func (repository users) FindFollowersByUserId(userID uint64) ([]models.User, error) {
+	rows, error := repository.db.Query(`
+		SELECT u.id, u.name, u.nick, u.email, u.createdAt
+		FROM users u
+		INNER JOIN followers f ON u.id = f.follower_id
+		WHERE f.user_id = ?
+	`, userID)
+
+	if error != nil {
+		 return nil, error
+	 }
+
+	defer rows.Close()
+
+	 var users []models.User
+
+	 for rows.Next() {
+		 var user models.User
+
+		 if error = rows.Scan(
+			 &user.ID,
+			 &user.Name,
+			 &user.Nick,
+			 &user.Email,
+			 &user.CreatedAt,
+		 ); error != nil {
+			 return nil, error
+		 }
+
+		 users = append(users, user)
+	 }
+
+	 return users, nil
+}

@@ -22,7 +22,7 @@ var usersRoutes = []Route{
 		URI: "/users/{id}",
 		Method: http.MethodGet,
 		Function: controllers.FindUserById,
-		AuthorizationRequired: false,
+		AuthorizationRequired: true,
 	},
 	{
 		URI: "/users/{id}",
@@ -34,6 +34,24 @@ var usersRoutes = []Route{
 		URI: "/users/{id}",
 		Method: http.MethodDelete,
 		Function: controllers.DeleteUser,
-		AuthorizationRequired: false,
+		AuthorizationRequired: true,
+	},
+	{
+		URI: "/users/{id}/follow",
+		Method: http.MethodPost,
+		Function: controllers.FollowUser,
+		AuthorizationRequired: true,
+	},
+	{
+		URI: "/users/{id}/unfollow",
+		Method: http.MethodPost,
+		Function: controllers.UnfollowUser,
+		AuthorizationRequired: true,
+	},
+	{
+		URI: "/users/{id}/followers",
+		Method: http.MethodGet,
+		Function: controllers.FindFollowers,
+		AuthorizationRequired: true,
 	},
 }
