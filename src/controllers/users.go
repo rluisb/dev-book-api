@@ -6,6 +6,7 @@ import (
 	"api/src/models"
 	"api/src/repositories"
 	"api/src/responses"
+	"api/src/security"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -293,6 +294,102 @@ func FindFollowers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responses.JSON(w, http.StatusOK, users)
+}
+
+//Find all following a user
+func FindFollowing(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	userID, error := strconv.ParseUint(vars["id"], 10, 64)
+	if error != nil {
+		responses.Error(w, http.StatusBadRequest, error)
+		return
+	}
+
+	db, error := database.Connect()
+	if error != nil {
+		responses.Error(w, http.StatusInternalServerError, error)
+		return
+	}
+	defer db.Close()
+
+	repository := repositories.NewUsersRepository(db)
+
+	users, error := repository.FindFollowingByUserId(userID)
+	if error != nil {
+		responses.Error(w, http.StatusInternalServerError, error)
+		return
+	}
+
+	responses.JSON(w, http.StatusOK, users)
+}
+
+
+//Update password for user
+func UpdatePassword(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	userID, error := strconv.ParseUint(vars["id"], 10, 64)
+	if error != nil {
+		responses.Error(w, http.StatusBadRequest, error)
+		return
+	}
+
+	userIDFromToken, error := authentication.GetUserIDFromToken(r)
+	if error != nil {
+		responses.Error(w, http.StatusUnauthorized, error)
+		return
+	}
+
+	if userIDFromToken != userID {
+		responses.Error(w, http.StatusForbidden, errors.New("it's not possible update the password from an user that is not yours"))
+		return
+	}
+
+	requestBody, error := ioutil.ReadAll(r.Body)
+	if error != nil {
+		responses.Error(w, http.StatusUnprocessableEntity, error)
+		return
+	}
+
+	var password models.Password
+	if error = json.Unmarshal(requestBody, &password); error != nil {
+		responses.Error(w, http.StatusBadRequest, error)
+		return
+	}
+
+	db, error := database.Connect()
+	if error != nil {
+		responses.Error(w, http.StatusInternalServerError, error)
+		return
+	}
+	defer db.Close()
+
+	repository := repositories.NewUsersRepository(db)
+
+	savedPasswordOnDB, error := repository.FindPasswordByUserId(userID)
+	if error != nil {
+		responses.Error(w, http.StatusInternalServerError, error)
+		return
+	}
+
+	if error = security.ValidatePassword(savedPasswordOnDB, password.OldPassword); error != nil {
+		responses.Error(w, http.StatusUnauthorized, errors.New("actual password is not the same saved on database for user"))
+		return
+	}
+
+	hashedPassword, error := security.Hash(password.NewPassword)
+	if error != nil {
+		responses.Error(w, http.StatusBadRequest, error)
+		return
+	}
+
+	if error = repository.UpdatePassword(userID, string(hashedPassword)); error != nil {
+		responses.Error(w, http.StatusInternalServerError, error)
+		return
+	}
+
+	responses.JSON(w, http.StatusNoContent, nil)
 }
 
 func getQueryParamByName(r *http.Request, queryParamName string) string{
